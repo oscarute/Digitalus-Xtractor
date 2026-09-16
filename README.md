@@ -4,6 +4,7 @@ Tras hacer click en el archivo "Digitalus Xtractor.xlsm", pulse el botón "Downl
 
 Una vez descargado, haga click derecho sobre el archivo y en propiedades active "Unblock" y después aplique los cambios. Esto es necesario porque Windows bloquea por defecto los archivos macro (.xlsm) descargados de Internet.
 <img width="460" height="573" alt="image" src="https://github.com/user-attachments/assets/2598978b-e26e-4609-accc-3430e76ae9b2" />
+
 Nota: La primera vez que abra el archivo saldrá un aviso de seguridad, con pulsar "Enable Content" ya no debiera volver a salir.
 
 Si tiene las macros desactivadas por defecto, debe acceder a "File > Options > Trust Center > Trust Center Settings…"
@@ -20,18 +21,19 @@ Nota: Si no dispone de ningún proyecto precio le requerirá generarlo en unos s
 Una vez obtenga la clave API, haga copiar/pegar dentro del campo definido en la pestaña "Config" de la herramienta.
 <img width="678" height="582" alt="image" src="https://github.com/user-attachments/assets/170a9707-ed2f-4dda-90e5-b1d482149a4f" />
 
-# Configuración de extracción y Uso
+# Configuración de extracción
 - Si tras pulsar el botón "Obtener modelos IA" no obtiene ningún error es que la API Key funciona correctamente. En este momento se recomienda guardar el archivo para que la API Key quede predefinida para un uso posterior.
 - Desde el desplegable "Modelos" puede elegir el modelo de IA a utilizar en la extracción de datos aunque se recomienda usar una versión flash como la 2.5 debido al consumo de tokens, sobre todo si usa un plan gratuito.
 - En caso de trabajar con una gran cantidad de facturas diariamente o requerir un modelo superior por la complejidad de las mismas, se recomienda utilizar una API Key de pago con el modelo que mejor se ajuste a sus necesidades.
 - La configuración está predefinida para capturar 10 campos. Puede editar sus identificadores y nombres de columna, así como activar o desactivar la extracción de un campo concreto. Si en el campo "Extraer" hay una "X" entonces el sistema procederá a su extracción.
 - En la columna formato se puede definir un formato según la nomenclatura de Excel en aquellos casos que se requiera.
 
-Una vez esté todo a gusto el usuario, solo debe pulsar "iniciar captura de datos" y elegir la carpeta donde tiene las facturas a procesar.
-Según el rendimiento de su ordenador es posible que en algunos momentos el programa se sature por el esfuerzo de la ejecución del proceso, tan solo debe ser paciente y esperar a que termine.
-Una vez finalizado, los datos quedarán automáticamente extraídos en la pestaña "Xtractor".
-Nota 1: En caso de procesar gran cantidad de facturas a la vez, es posible que se alcancen los límites de la API Key de Gemini; en ese caso se obtendrá un error indicando dicha situación y se mostrarán los datos de facturas procesadas hasta ese momento.
-Nota 2: Los límites de la API Key gratuita se reinician diariamente por lo que una vez falle tan solo debe esperar al día siguiente para continuar a no ser que prefiera usar API Key de pago.
+Uso
+- Una vez esté todo a gusto el usuario, solo debe pulsar "iniciar captura de datos" y elegir la - carpeta donde tiene las facturas a procesar.
+- Según el rendimiento de su ordenador es posible que en algunos momentos el programa se sature por el esfuerzo de la ejecución del proceso, tan solo debe ser paciente y esperar a que termine.
+- Una vez finalizado, los datos quedarán automáticamente extraídos en la pestaña "Xtractor".
+- Nota 1: En caso de procesar gran cantidad de facturas a la vez, es posible que se alcancen los límites de la API Key de Gemini; en ese caso se obtendrá un error indicando dicha situación y se mostrarán los datos de facturas procesadas hasta ese momento.
+- Nota 2: Los límites de la API Key gratuita se reinician diariamente por lo que una vez falle tan solo debe esperar al día siguiente para continuar a no ser que prefiera usar API Key de pago.
 
 ## Aviso legal y de uso
 

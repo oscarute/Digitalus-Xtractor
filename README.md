@@ -29,7 +29,7 @@ Una vez obtenga la clave API, haga copiar/pegar dentro del campo definido en la 
 - La configuración está predefinida para capturar 10 campos. Puede editar sus identificadores y nombres de columna, así como activar o desactivar la extracción de un campo concreto. Si en el campo "Extraer" hay una "X" entonces el sistema procederá a su extracción.
 - En la columna formato se puede definir un formato según la nomenclatura de Excel en aquellos casos que se requiera.
 
-Uso
+# Uso de la herramienta
 - Una vez esté todo a gusto el usuario, solo debe pulsar "iniciar captura de datos" y elegir la - carpeta donde tiene las facturas a procesar.
 - Según el rendimiento de su ordenador es posible que en algunos momentos el programa se sature por el esfuerzo de la ejecución del proceso, tan solo debe ser paciente y esperar a que termine.
 - Una vez finalizado, los datos quedarán automáticamente extraídos en la pestaña "Xtractor".

@@ -16,6 +16,7 @@ Desde el menú izquierdo seleccione "Macro Settings" y active las macros.
 ## Crear API Key de Google Gemini
 A través de la siguiente url, acceda con su cuenta de Google y pulse en "Crear clave de API".
 https://aistudio.google.com/api-keys
+
 Nota: Si no dispone de ningún proyecto precio le requerirá generarlo en unos sencillos pasos.
 
 Una vez obtenga la clave API, haga copiar/pegar dentro del campo definido en la pestaña "Config" de la herramienta.

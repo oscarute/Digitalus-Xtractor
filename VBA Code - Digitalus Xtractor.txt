@@ -1,0 +1,225 @@
+Option Explicit
+
+' =========================================================
+' 1. ACTUALIZAR LISTA DE MODELOS (Mensaje simplificado)
+' =========================================================
+Sub ActualizarListaModelos()
+    Dim http As Object
+    Dim apiKey As String, url As String, response As String
+    Dim ws As Worksheet
+    Dim modelName As String
+    Dim startPos As Long, endPos As Long
+    Dim rowCounter As Long
+    
+    Set ws = ThisWorkbook.Sheets("Config")
+    apiKey = Trim(ws.Range("C4").Value)
+
+    If apiKey = "" Then
+        If MsgBox("La API Key está vacía. ¿Abrir Google AI Studio?", vbQuestion + vbYesNo) = vbYes Then
+            ActiveWorkbook.FollowHyperlink Address:="https://aistudio.google.com/api-keys"
+        End If
+        Exit Sub
+    End If
+
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    url = "https://generativelanguage.googleapis.com/v1beta/models?key=" & apiKey
+    
+    On Error Resume Next
+    http.Open "GET", url, False: http.Send
+    If Err.Number <> 0 Then MsgBox "Error de conexión.", vbCritical: Exit Sub
+    On Error GoTo 0
+    
+    response = http.ResponseText
+    
+    ' Limpiamos el rango desprotegido de la columna Z
+    ws.Range("Z1:Z50").ClearContents
+    rowCounter = 1
+    
+    startPos = 1
+    Do
+        startPos = InStr(startPos, response, """name"": ""models/")
+        If startPos = 0 Then Exit Do
+        
+        startPos = startPos + 16
+        endPos = InStr(startPos, response, """")
+        modelName = Mid(response, startPos, endPos - startPos)
+        
+        ' --- FILTROS DE EXCLUSIÓN PARA DIGITALUS ---
+        Dim esValido As Boolean: esValido = False
+        If InStr(modelName, "gemini") > 0 Then
+            esValido = True
+            If InStr(modelName, "embedding") > 0 Then esValido = False
+            If InStr(modelName, "aqa") > 0 Then esValido = False
+            If InStr(modelName, "vision") > 0 Then esValido = False
+            If InStr(modelName, "search") > 0 Then esValido = False
+            If InStr(modelName, "experimental") > 0 Then esValido = False
+        End If
+        
+        If esValido And rowCounter <= 50 Then
+            ws.Cells(rowCounter, 26).Value = modelName
+            rowCounter = rowCounter + 1
+        End If
+        startPos = endPos
+    Loop
+    
+    If rowCounter > 1 Then
+        ' Mensaje solicitado por el usuario
+        MsgBox "Modelos IA actualizados", vbInformation, "Digitalus Xtractor"
+    Else
+        MsgBox "No se encontraron modelos Gemini compatibles.", vbExclamation
+    End If
+End Sub
+
+' =========================================================
+' 2. PROCESAR DOCUMENTOS (Con salto automático a Xtractor)
+' =========================================================
+Sub ProcesarDocumentos()
+    Dim wsConfig As Worksheet: Set wsConfig = ThisWorkbook.Sheets("Config")
+    Dim wsXtractor As Worksheet: Set wsXtractor = ThisWorkbook.Sheets("Xtractor")
+    Dim apiKey As String: apiKey = Trim(wsConfig.Range("C4").Value)
+    Dim modelo As String: modelo = Trim(wsConfig.Range("C5").Value)
+    
+    Dim tbl As ListObject: Set tbl = wsConfig.ListObjects("TablaCampos")
+    Dim filaTbl As ListRow
+    Dim camposAI As String, prompt As String, apiURL As String
+    Dim folderPath As String, fileName As String
+    Dim rowIdx As Long, colIdx As Integer
+    
+    If apiKey = "" Or modelo = "" Then
+        MsgBox "Falta configuración en C4 o C5.", vbCritical: Exit Sub
+    End If
+
+    ' Limpieza segura para hojas protegidas
+    wsXtractor.Cells.ClearContents
+    
+    colIdx = 1
+    For Each filaTbl In tbl.ListRows
+        Dim idCampo As String: idCampo = Trim(filaTbl.Range(1, 1).Value)
+        Dim nombreVis As String: nombreVis = Trim(filaTbl.Range(1, 2).Value)
+        If idCampo <> "" And nombreVis <> "" Then
+            If UCase(filaTbl.Range(1, 3).Value) = "X" Then
+                camposAI = camposAI & idCampo & ", "
+                wsXtractor.Cells(1, colIdx).Value = nombreVis
+                colIdx = colIdx + 1
+            End If
+        End If
+    Next filaTbl
+    
+    If camposAI = "" Then MsgBox "No hay campos marcados con 'X'.", vbExclamation: Exit Sub
+    camposAI = Left(camposAI, Len(camposAI) - 2)
+    wsXtractor.Cells(1, colIdx).Value = "Archivo Origen"
+    
+    With wsXtractor.Range(wsXtractor.Cells(1, 1), wsXtractor.Cells(1, colIdx))
+        .Font.Bold = True: .Interior.Color = RGB(46, 117, 182): .Font.Color = RGB(255, 255, 255)
+    End With
+
+    With Application.FileDialog(msoFileDialogFolderPicker)
+        .Title = "Selecciona la carpeta con PDFs"
+        If .Show = -1 Then folderPath = .SelectedItems(1) Else Exit Sub
+    End With
+    
+    apiURL = "https://generativelanguage.googleapis.com/v1beta/models/" & modelo & ":generateContent?key=" & apiKey
+    
+    rowIdx = 2
+    fileName = Dir(folderPath & "\*.pdf")
+    
+    Do While fileName <> ""
+        Application.StatusBar = "Analizando: " & fileName
+        prompt = "Extract these fields: " & camposAI & ". Output wrapping values in XML tags. Dates: YYYY-MM-DD. Numbers: strictly 1500.50 format. No extra text."
+        
+        Dim jsonRes As String
+        jsonRes = EnviarRequestWindows(apiURL, folderPath & "\" & fileName, prompt)
+        
+        If InStr(jsonRes, "ERROR_API:") > 0 Then
+            MsgBox "PROCESO INTERRUMPIDO" & vbCrLf & vbCrLf & "Motivo: " & Replace(jsonRes, "ERROR_API:", ""), vbCritical
+            Application.StatusBar = False: Exit Sub
+        End If
+
+        jsonRes = DecodificarRespuestaIA(jsonRes)
+
+        Dim c As Integer: c = 1
+        For Each filaTbl In tbl.ListRows
+            Dim idVal As String: idVal = Trim(filaTbl.Range(1, 1).Value)
+            Dim nomVal As String: nomVal = Trim(filaTbl.Range(1, 2).Value)
+            If idVal <> "" And nomVal <> "" Then
+                If UCase(filaTbl.Range(1, 3).Value) = "X" Then
+                    Dim valor As String, formato As String
+                    valor = LimpiarDato(ExtraerDatoXML(jsonRes, idVal))
+                    On Error Resume Next
+                    formato = filaTbl.Range(1, 4).Value
+                    On Error GoTo 0
+                    If formato <> "" And formato <> "@" Then
+                        If IsNumeric(Replace(valor, ".", ",")) Then
+                            wsXtractor.Cells(rowIdx, c).Value = Val(valor)
+                        ElseIf IsDate(valor) Then
+                            wsXtractor.Cells(rowIdx, c).Value = CDate(valor)
+                        Else
+                            wsXtractor.Cells(rowIdx, c).Value = valor
+                        End If
+                        wsXtractor.Cells(rowIdx, c).NumberFormat = formato
+                    Else
+                        wsXtractor.Cells(rowIdx, c).Value = valor
+                    End If
+                    c = c + 1
+                End If
+            End If
+        Next filaTbl
+        wsXtractor.Cells(rowIdx, c).Value = fileName
+        rowIdx = rowIdx + 1: fileName = Dir
+    Loop
+    
+    wsXtractor.Columns.AutoFit
+    Application.StatusBar = False
+    
+    ' --- CAMBIO SOLICITADO: ACTIVAR PESTAÑA ANTES DEL MENSAJE ---
+    wsXtractor.Activate
+    
+    MsgBox "Extracción finalizada con éxito.", vbInformation, "Digitalus Xtractor"
+End Sub
+
+' =========================================================
+' 3. FUNCIONES DE APOYO
+' =========================================================
+Function EnviarRequestWindows(url As String, path As String, pmt As String) As String
+    On Error GoTo ErrH
+    Dim http As Object, xml As Object, node As Object, arr() As Byte, fn As Integer
+    fn = FreeFile: Open path For Binary Access Read As fn
+    ReDim arr(LOF(fn) - 1): Get fn, , arr: Close fn
+    Set xml = CreateObject("MSXML2.DOMDocument.6.0")
+    Set node = xml.createElement("b64"): node.DataType = "bin.base64": node.nodeTypedValue = arr
+    Dim b64 As String: b64 = Replace(Replace(node.Text, vbLf, ""), vbCr, "")
+    Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
+    http.Open "POST", url, False
+    http.SetRequestHeader "Content-Type", "application/json"
+    http.Send "{""contents"": [{""parts"": [{""text"": """ & pmt & """},{""inline_data"": {""mime_type"":""application/pdf"",""data"":""" & b64 & """}}]}]}"
+    
+    Select Case http.Status
+        Case 200: EnviarRequestWindows = http.ResponseText
+        Case 404: EnviarRequestWindows = "ERROR_API: El modelo seleccionado no existe. Pulsa 'Obtener modelos'."
+        Case 429: EnviarRequestWindows = "ERROR_API: Límite diario alcanzado. Reseteo a las 09:00 AM."
+        Case Else: EnviarRequestWindows = "ERROR_API: Error " & http.Status
+    End Select
+    Exit Function
+ErrH: EnviarRequestWindows = "ERROR_API: Fallo de red."
+End Function
+
+Function DecodificarRespuestaIA(texto As String) As String
+    Dim t As String: t = texto
+    t = Replace(t, "\u003c", "<"): t = Replace(t, "\u003e", ">")
+    t = Replace(t, "\n", " "): t = Replace(t, "\r", ""): t = Replace(t, "\""", """")
+    DecodificarRespuestaIA = t
+End Function
+
+Function ExtraerDatoXML(ByVal texto As String, campo As String) As String
+    Dim p1 As Long, p2 As Long: Dim s As String, e As String
+    s = "<" & Trim(campo) & ">": e = "</" & Trim(campo) & ">"
+    p1 = InStr(1, texto, s, vbTextCompare)
+    If p1 > 0 Then
+        p1 = p1 + Len(s): p2 = InStr(p1, texto, e, vbTextCompare)
+        If p2 > p1 Then ExtraerDatoXML = Trim(Mid(texto, p1, p2 - p1))
+    End If
+End Function
+
+Function LimpiarDato(texto As String) As String
+    LimpiarDato = Trim(Replace(Replace(texto, "\r", ""), "\t", ""))
+End Function

@@ -43,6 +43,9 @@ Una vez obtenga la clave API, haga copiar/pegar dentro del campo definido en la 
 
 ## Aviso legal y de uso
 
+Digitalus Xtractor se distribuye bajo licencia MIT (ver archivo [LICENSE](LICENSE)). 
+El código fuente completo está disponible en `VBA_Code - Digitalus Xtractor.txt`.
+
 ### Precisión de los datos extraídos
 Esta herramienta utiliza un modelo de IA (Google Gemini) para leer e interpretar 
 facturas. Los modelos de IA pueden cometer errores de lectura, especialmente en 
@@ -66,10 +69,5 @@ de Google. Si vas a procesar facturas con datos personales de clientes o
 proveedores, revisa los [términos actuales de la API de Gemini](https://ai.google.dev/gemini-api/terms) 
 y valora usar el nivel de pago, que no tiene este uso de datos.
 
-### Sin garantías
-Esta herramienta se proporciona "tal cual" (as-is), sin garantía de ningún tipo, 
-explícita o implícita, incluyendo pero sin limitarse a garantías de 
-comerciabilidad, idoneidad para un propósito concreto o ausencia de errores. 
-El autor no se responsabiliza de pérdidas, daños o decisiones tomadas a partir 
-de los datos generados por esta herramienta. El uso es bajo tu propia 
-responsabilidad.
+### Licencia
+Software distribuido bajo licencia MIT. Ver [LICENSE](LICENSE) para el texto completo.
